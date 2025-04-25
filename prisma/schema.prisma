@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  password       String
+  phone          String?
+  role           Role            @default(CLIENT)
+  isActive       Boolean         @default(true)
+  isConfirmed    Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  lastLogin      DateTime?
+  clientOrders   Order[]         @relation("ClientOrders")
+  driverOrders   Order[]         @relation("DriverOrders")
+  driver_profile driver_profile?
+  driver_stats   driver_stats?
+  payments       Payment[]
+  notifications  UserNotification?
+}
+
+model Order {
+  id                    String        @id @default(uuid())
+  trackingNumber        String        @unique
+  clientId              String
+  driverId              String?
+  pickupAddress         Json
+  deliveryAddress       Json
+  packageDetails        Json
+  status                OrderStatus   @default(PENDING)
+  price                 Float
+  paymentStatus         PaymentStatus @default(PENDING)
+  commissionPaid        Boolean       @default(false)
+  estimatedDeliveryTime DateTime?
+  actualDeliveryTime    DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  client                User          @relation("ClientOrders", fields: [clientId], references: [id])
+  driver                User?         @relation("DriverOrders", fields: [driverId], references: [id])
+  payment               Payment?
+}
+
+model driver_profile {
+  id                      String    @id
+  driverId                String    @unique
+  licenseNumber           String
+  licenseExpiry           DateTime
+  vehicleMake             String
+  vehicleModel            String
+  vehicleYear             String
+  vehicleColor            String
+  vehicleRegistration     String?
+  licenseDocument         String?
+  registrationDocument    String?
+  insuranceDocument       String?
+  backgroundCheckDocument String?
+  isApproved              Boolean   @default(false)
+  isRejected              Boolean   @default(false)
+  approvedAt              DateTime?
+  approvedBy              String?
+  rejectedAt              DateTime?
+  rejectedBy              String?
+  rejectionReason         String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  User                    User      @relation(fields: [driverId], references: [id])
+}
+
+model driver_stats {
+  id              String   @id
+  driverId        String   @unique
+  rating          Float    @default(0)
+  totalDeliveries Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  User            User     @relation(fields: [driverId], references: [id])
+}
+
+model system_settings {
+  id            Int      @id @default(1)
+  pricing       Json
+  delivery      Json
+  notifications Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+}
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  bankName      String
+  accountNumber String
+  accountName   String
+  sortCode      String?
+  description   String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  orderId           String   @unique
+  driverId          String
+  amount            Float
+  paymentMethod     String
+  paymentReference  String
+  paymentScreenshot String?
+  status            String   @default("PENDING")
+  notes             String?
+  driverConfirmed   Boolean  @default(false)
+  hasIssue          Boolean  @default(false)
+  issueDetails      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  driver            User     @relation(fields: [driverId], references: [id])
+  order             Order    @relation(fields: [orderId], references: [id])
+}
+
+model UserNotification {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  notifications Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PICKED_UP
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+  DRIVER
+}
