@@ -7,12 +7,15 @@ const prisma = require('./lib/prisma');
 // Load environment variables
 dotenv.config();
 
+// Load configuration based on environment
+const config = require('./config');
+
 // Initialize Express app
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = config.server.port || process.env.PORT || 5000;
 
 // CORS configuration
-const corsOptions = {
+const corsOptions = config.cors || {
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -22,7 +25,10 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(morgan('dev'));
+
+// Use appropriate logging based on environment
+const logFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev';
+app.use(morgan(logFormat));
 
 // Routes import
 const authRoutes = require('./routes/authRoutes');
@@ -48,70 +54,97 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/uploads', uploadRoutes);
 
-// Debug route (remove in production)
-app.get('/api/debug', (req, res) => {
-  res.json({
-    status: 'success',
-    message: 'Debug endpoint is working',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    routes: {
-      auth: '/api/auth',
-      orders: '/api/orders',
-      users: '/api/users',
-      content: '/api/content',
-      admin: '/api/admin',
-      notifications: '/api/notifications'
-    }
-  });
-});
-
-// More detailed order route debug
-app.get('/api/debug/orders', (req, res) => {
-  try {
-    const orderRoutesStack = orderRoutes.stack;
-    const routes = orderRoutesStack.map(layer => {
-      if (layer.route) {
-        return {
-          path: layer.route.path,
-          methods: Object.keys(layer.route.methods).map(m => m.toUpperCase())
-        };
-      }
-      return {
-        name: layer.name,
-        keys: layer.keys
-      };
-    });
-    
+// Remove debug routes in production
+if (process.env.NODE_ENV !== 'production') {
+  // Debug route
+  app.get('/api/debug', (req, res) => {
     res.json({
       status: 'success',
-      message: 'Order routes debug info',
-      routes
+      message: 'Debug endpoint is working',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      routes: {
+        auth: '/api/auth',
+        orders: '/api/orders',
+        users: '/api/users',
+        content: '/api/content',
+        admin: '/api/admin',
+        notifications: '/api/notifications'
+      }
     });
-  } catch (error) {
-    res.json({
-      status: 'error',
-      message: 'Failed to get order routes debug info',
-      error: error.message
-    });
-  }
-});
+  });
+
+  // More detailed order route debug
+  app.get('/api/debug/orders', (req, res) => {
+    try {
+      const orderRoutesStack = orderRoutes.stack;
+      const routes = orderRoutesStack.map(layer => {
+        if (layer.route) {
+          return {
+            path: layer.route.path,
+            methods: Object.keys(layer.route.methods).map(m => m.toUpperCase())
+          };
+        }
+        return {
+          name: layer.name,
+          keys: layer.keys
+        };
+      });
+      
+      res.json({
+        status: 'success',
+        message: 'Order routes debug info',
+        routes
+      });
+    } catch (error) {
+      res.json({
+        status: 'error',
+        message: 'Failed to get order routes debug info',
+        error: error.message
+      });
+    }
+  });
+}
 
 // Root route
 app.get('/', (req, res) => {
-  res.send('Shipping Company API is running');
+  res.send('Khatak API is running');
+});
+
+// Health check endpoint for monitoring
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 404 handler
+app.use((req, res, next) => {
+  res.status(404).json({
+    status: 'error',
+    message: 'Route not found'
+  });
 });
 
 // Error handler middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
+  
+  // Avoid leaking error details in production
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Something went wrong!' 
+    : err.message;
+    
   res.status(500).json({
     status: 'error',
-    message: 'Something went wrong!'
+    message
   });
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(`Server is configured to use domain: ${config.server.domain || 'localhost'}`);
 }); 
