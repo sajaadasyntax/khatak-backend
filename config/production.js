@@ -10,7 +10,7 @@ module.exports = {
   
   // CORS settings
   cors: {
-    origin: process.env.FRONTEND_URL || 'https://katakksa.com',
+    origin: process.env.FRONTEND_URL || 'https://www.katakksa.com',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
