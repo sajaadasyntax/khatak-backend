@@ -64,7 +64,7 @@ app.post('/api/driver/upload/license', uploadDriverDocuments.single('licenseDocu
       });
     }
 
-    // Since we don't have authentication context, we'll just return the uploaded file URL
+    // Return the uploaded file URL
     const documentUrl = req.file.path; // Cloudinary URL
 
     res.status(200).json({
@@ -83,7 +83,6 @@ app.post('/api/driver/upload/license', uploadDriverDocuments.single('licenseDocu
   }
 });
 
-// Add special route for registration document uploads
 app.post('/api/driver/upload/registration', uploadDriverDocuments.single('registrationDocument'), async (req, res) => {
   try {
     if (!req.file) {
@@ -112,7 +111,6 @@ app.post('/api/driver/upload/registration', uploadDriverDocuments.single('regist
   }
 });
 
-// Add special route for driver photo uploads
 app.post('/api/driver/upload/driver-photo', uploadDriverDocuments.single('backgroundCheckDocument'), async (req, res) => {
   try {
     if (!req.file) {
@@ -137,6 +135,34 @@ app.post('/api/driver/upload/driver-photo', uploadDriverDocuments.single('backgr
     res.status(500).json({
       status: 'error',
       message: 'Failed to upload driver photo'
+    });
+  }
+});
+
+app.post('/api/driver/upload/insurance', uploadDriverDocuments.single('insuranceDocument'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'No file uploaded'
+      });
+    }
+
+    // Return the uploaded file URL
+    const documentUrl = req.file.path; // Cloudinary URL
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        documentUrl,
+        message: 'Insurance document uploaded successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading insurance document:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to upload insurance document'
     });
   }
 });

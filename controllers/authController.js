@@ -59,7 +59,7 @@ exports.register = async (req, res) => {
 
     // Create user and driver profile in a transaction if this is a driver
     if (role === 'DRIVER') {
-      // Check if document URLs are provided
+      // Check if document URLs are provided - insurance is now optional
       if (!licenseDocumentUrl || !registrationDocumentUrl || !driverPhotoUrl) {
         return res.status(400).json({
           status: 'fail',
