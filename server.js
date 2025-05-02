@@ -106,6 +106,9 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
+// Add compatibility route for old API pattern
+app.use('/api/driver', driverRoutes);
+
 // Root route
 app.get('/', (req, res) => {
   res.send('Khatak API is running');
