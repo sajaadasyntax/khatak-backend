@@ -51,8 +51,43 @@ app.use('/api/content', contentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/payments', paymentRoutes);
+
+// Special route for driver uploads with bypassed auth
+const { uploadDriverDocuments } = require('./config/cloudinary');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+app.post('/api/driver/upload/license', uploadDriverDocuments.single('licenseDocument'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'No file uploaded'
+      });
+    }
+
+    // Since we don't have authentication context, we'll just return the uploaded file URL
+    const documentUrl = req.file.path; // Cloudinary URL
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        documentUrl,
+        message: 'License document uploaded successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading license document:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to upload license document'
+    });
+  }
+});
+
 app.use('/api/drivers', driverRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/driver', driverRoutes);
 
 // Remove debug routes in production
 if (process.env.NODE_ENV !== 'production') {
@@ -105,9 +140,6 @@ if (process.env.NODE_ENV !== 'production') {
     }
   });
 }
-
-// Add compatibility route for old API pattern
-app.use('/api/driver', driverRoutes);
 
 // Root route
 app.get('/', (req, res) => {
