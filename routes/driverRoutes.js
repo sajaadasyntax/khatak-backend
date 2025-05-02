@@ -16,6 +16,13 @@ router.post(
   driverDocumentsController.uploadLicenseDocument
 );
 
+// Compatibility route for frontend using old URL pattern
+router.post(
+  '/upload/license',
+  uploadDriverDocuments.single('licenseDocument'),
+  driverDocumentsController.uploadLicenseDocument
+);
+
 router.post(
   '/documents/registration',
   uploadDriverDocuments.single('registrationDocument'),
