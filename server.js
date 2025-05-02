@@ -112,6 +112,35 @@ app.post('/api/driver/upload/registration', uploadDriverDocuments.single('regist
   }
 });
 
+// Add special route for driver photo uploads
+app.post('/api/driver/upload/driver-photo', uploadDriverDocuments.single('backgroundCheckDocument'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'No file uploaded'
+      });
+    }
+
+    // Return the uploaded file URL
+    const documentUrl = req.file.path; // Cloudinary URL
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        documentUrl,
+        message: 'Driver photo uploaded successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading driver photo:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to upload driver photo'
+    });
+  }
+});
+
 app.use('/api/drivers', driverRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/driver', driverRoutes);
