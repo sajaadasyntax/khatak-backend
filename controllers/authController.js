@@ -54,7 +54,7 @@ exports.register = async (req, res) => {
       password: hashedPassword,
       phone,
       role,
-      isConfirmed: role === 'DRIVER' ? false : true // Only drivers need confirmation
+      isConfirmed: false // All users need confirmation before login
     };
 
     // Create user and driver profile in a transaction if this is a driver
@@ -191,8 +191,8 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Check if driver is confirmed
-    if (user.role === 'DRIVER' && !user.isConfirmed) {
+    // Check if user is confirmed
+    if (!user.isConfirmed) {
       return res.status(401).json({
         status: 'fail',
         message: 'Your account is pending confirmation'
