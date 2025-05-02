@@ -54,8 +54,6 @@ app.use('/api/payments', paymentRoutes);
 
 // Special route for driver uploads with bypassed auth
 const { uploadDriverDocuments } = require('./config/cloudinary');
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
 
 app.post('/api/driver/upload/license', uploadDriverDocuments.single('licenseDocument'), async (req, res) => {
   try {
@@ -81,6 +79,35 @@ app.post('/api/driver/upload/license', uploadDriverDocuments.single('licenseDocu
     res.status(500).json({
       status: 'error',
       message: 'Failed to upload license document'
+    });
+  }
+});
+
+// Add special route for registration document uploads
+app.post('/api/driver/upload/registration', uploadDriverDocuments.single('registrationDocument'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'No file uploaded'
+      });
+    }
+
+    // Return the uploaded file URL
+    const documentUrl = req.file.path; // Cloudinary URL
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        documentUrl,
+        message: 'Registration document uploaded successfully'
+      }
+    });
+  } catch (error) {
+    console.error('Error uploading registration document:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to upload registration document'
     });
   }
 });
