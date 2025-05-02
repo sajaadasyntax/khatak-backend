@@ -107,12 +107,10 @@ exports.register = async (req, res) => {
         return user;
       });
 
-      // Generate token
-      const token = signToken(result.id, result.role);
-
+      // Don't generate token for unconfirmed users
       res.status(201).json({
         status: 'success',
-        token,
+        message: 'Registration successful. Your account is pending approval.',
         data: {
           user: result
         }
@@ -130,12 +128,10 @@ exports.register = async (req, res) => {
         }
       });
 
-      // Generate token
-      const token = signToken(user.id, user.role);
-
+      // Don't generate token for unconfirmed users
       res.status(201).json({
         status: 'success',
-        token,
+        message: 'Registration successful. Your account is pending approval.',
         data: {
           user
         }
