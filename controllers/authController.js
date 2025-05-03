@@ -148,16 +148,26 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { emailOrPhone, email, phone, password } = req.body;
+    // Handle both old format (email) and new format (emailOrPhone)
+    // By using destructuring with default values, we're more forgiving
+    const { email = '', phone = '', emailOrPhone = '', password } = req.body;
     
-    // Handle both the new format (emailOrPhone) and old format (email or phone)
+    // Use the first available identifier
     const identifier = emailOrPhone || email || phone;
 
-    // Check if identifier and password exist
-    if (!identifier || !password) {
+    // Check if password exists
+    if (!password) {
       return res.status(400).json({
         status: 'fail',
-        message: 'Please provide email/phone and password'
+        message: 'Password is required'
+      });
+    }
+    
+    // Check if we have any identifier
+    if (!identifier) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Email or phone number is required'
       });
     }
 
