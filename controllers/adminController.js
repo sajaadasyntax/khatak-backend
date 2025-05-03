@@ -1417,4 +1417,66 @@ exports.getDriverProfile = async (req, res) => {
       message: 'Failed to fetch driver profile'
     });
   }
+};
+
+/**
+ * Update user information by admin
+ * @route PUT /api/admin/users/:userId
+ */
+exports.updateUserInfo = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { name, email, phone, isActive, isConfirmed } = req.body;
+    
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!existingUser) {
+      return responseHandler.notFound(res, 'User not found');
+    }
+    
+    // Verify email uniqueness if it's being updated
+    if (email && email !== existingUser.email) {
+      const emailExists = await prisma.user.findUnique({
+        where: { email }
+      });
+      
+      if (emailExists) {
+        return responseHandler.badRequest(res, 'Email is already in use');
+      }
+    }
+    
+    // Update user information
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(name && { name }),
+        ...(email && { email }),
+        ...(phone && { phone }),
+        ...(isActive !== undefined && { isActive }),
+        ...(isConfirmed !== undefined && { isConfirmed })
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        isConfirmed: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+    
+    return responseHandler.success(res, {
+      message: 'User information updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating user information:', error);
+    return responseHandler.serverError(res, 'Failed to update user information');
+  }
 }; 

@@ -148,23 +148,29 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { emailOrPhone, password } = req.body;
 
-    // Check if email and password exist
-    if (!email || !password) {
+    // Check if emailOrPhone and password exist
+    if (!emailOrPhone || !password) {
       return res.status(400).json({
         status: 'fail',
-        message: 'Please provide email and password'
+        message: 'Please provide email/phone and password'
       });
     }
 
-    // Check if user exists && password is correct
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Check if user exists with either email or phone
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: emailOrPhone },
+          { phone: emailOrPhone }
+        ]
+      },
       select: {
         id: true,
         name: true,
         email: true,
+        phone: true,
         password: true,
         role: true,
         isConfirmed: true,
@@ -175,7 +181,7 @@ exports.login = async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({
         status: 'fail',
-        message: 'Incorrect email or password'
+        message: 'Incorrect email/phone or password'
       });
     }
 

@@ -15,6 +15,7 @@ router.get('/dashboard', adminController.getDashboardData);
 router.get('/users', adminController.getUsers);
 router.patch('/users/:userId/status', adminController.updateUserStatus);
 router.post('/users/reset-password', adminController.resetUserPassword);
+router.put('/users/:userId', adminController.updateUserInfo);
 
 // Driver management
 router.get('/drivers/:id/profile', adminController.getDriverProfile);
