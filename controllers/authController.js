@@ -148,10 +148,13 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { emailOrPhone, password } = req.body;
+    const { emailOrPhone, email, phone, password } = req.body;
+    
+    // Handle both the new format (emailOrPhone) and old format (email or phone)
+    const identifier = emailOrPhone || email || phone;
 
-    // Check if emailOrPhone and password exist
-    if (!emailOrPhone || !password) {
+    // Check if identifier and password exist
+    if (!identifier || !password) {
       return res.status(400).json({
         status: 'fail',
         message: 'Please provide email/phone and password'
@@ -162,8 +165,8 @@ exports.login = async (req, res) => {
     let user = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: emailOrPhone },
-          { phone: emailOrPhone }
+          { email: identifier },
+          { phone: identifier }
         ]
       },
       select: {
