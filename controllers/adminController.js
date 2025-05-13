@@ -1386,24 +1386,36 @@ exports.getDriverProfile = async (req, res) => {
       isConfirmed: driver.isConfirmed,
       createdAt: driver.createdAt,
       lastLogin: driver.lastLogin,
-      driver_profile: driver.driver_profile ? {
-        licenseNumber: driver.driver_profile.licenseNumber,
-        licenseExpiry: driver.driver_profile.licenseExpiry,
-        vehicleMake: driver.driver_profile.vehicleMake,
-        vehicleModel: driver.driver_profile.vehicleModel,
-        vehicleYear: driver.driver_profile.vehicleYear,
-        vehicleColor: driver.driver_profile.vehicleColor,
-        vehicleRegistration: driver.driver_profile.vehicleRegistration,
-        licenseDocument: driver.driver_profile.licenseDocument,
-        registrationDocument: driver.driver_profile.registrationDocument,
-        insuranceDocument: driver.driver_profile.insuranceDocument,
-        backgroundCheckDocument: driver.driver_profile.backgroundCheckDocument,
-        isApproved: driver.driver_profile.isApproved,
-        approvedAt: driver.driver_profile.approvedAt,
-        isRejected: driver.driver_profile.isRejected,
-        rejectedAt: driver.driver_profile.rejectedAt,
-        rejectionReason: driver.driver_profile.rejectionReason
-      } : null
+      documents: driver.driver_profile ? {
+        license: {
+          number: driver.driver_profile.licenseNumber,
+          expiry: driver.driver_profile.licenseExpiry,
+          document: driver.driver_profile.licenseDocument
+        },
+        registration: {
+          document: driver.driver_profile.registrationDocument
+        },
+        insurance: {
+          document: driver.driver_profile.insuranceDocument
+        },
+        backgroundCheck: {
+          document: driver.driver_profile.backgroundCheckDocument
+        }
+      } : null,
+      vehicle: driver.driver_profile ? {
+        make: driver.driver_profile.vehicleMake,
+        model: driver.driver_profile.vehicleModel,
+        year: driver.driver_profile.vehicleYear,
+        color: driver.driver_profile.vehicleColor,
+        registration: driver.driver_profile.vehicleRegistration
+      } : null,
+      status: {
+        isApproved: driver.driver_profile?.isApproved || false,
+        isRejected: driver.driver_profile?.isRejected || false,
+        approvedAt: driver.driver_profile?.approvedAt,
+        rejectedAt: driver.driver_profile?.rejectedAt,
+        rejectionReason: driver.driver_profile?.rejectionReason
+      }
     };
     
     return res.status(200).json({

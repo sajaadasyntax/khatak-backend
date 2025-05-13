@@ -4,6 +4,31 @@ const jwt = require('jsonwebtoken');
 
 const prisma = new PrismaClient();
 
+const standardizePhoneNumber = (phone) => {
+  if (!phone) return '';
+  
+  // Remove any non-digit characters
+  let cleaned = phone.replace(/\D/g, '');
+  
+  // If it's a Saudi number with country code (966)
+  if (cleaned.startsWith('966') && cleaned.length === 12) {
+    return '0' + cleaned.substring(3);
+  }
+  
+  // If it's a Saudi number without country code (starts with 05)
+  if (cleaned.startsWith('05') && cleaned.length === 10) {
+    return cleaned;
+  }
+  
+  // If it's a Saudi number without country code (starts with 5)
+  if (cleaned.startsWith('5') && cleaned.length === 9) {
+    return '0' + cleaned;
+  }
+  
+  // Return as is if it doesn't match any pattern
+  return cleaned;
+};
+
 const signToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN
@@ -32,15 +57,25 @@ exports.register = async (req, res) => {
       carColor
     } = req.body;
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+    // Standardize phone number if provided
+    const standardizedPhone = phone ? standardizePhoneNumber(phone) : null;
+
+    // Check if user already exists (by email or phone)
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { phone: standardizedPhone }
+        ]
+      }
     });
 
     if (existingUser) {
       return res.status(400).json({
         status: 'fail',
-        message: 'Email already registered'
+        message: existingUser.email === email ? 
+          'Email already registered' : 
+          'Phone number already registered'
       });
     }
 
@@ -52,9 +87,9 @@ exports.register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      phone,
+      phone: standardizedPhone,
       role,
-      isConfirmed: false // All users need confirmation before login
+      isConfirmed: role === 'CLIENT' ? true : false // Only confirm client accounts automatically
     };
 
     // Create user and driver profile in a transaction if this is a driver
@@ -76,6 +111,7 @@ exports.register = async (req, res) => {
             id: true,
             name: true,
             email: true,
+            phone: true,
             role: true,
             isConfirmed: true
           }
@@ -107,8 +143,8 @@ exports.register = async (req, res) => {
         return user;
       });
 
-      // Don't generate token for unconfirmed users
-      res.status(201).json({
+      // Return response in the expected format
+      return res.status(201).json({
         status: 'success',
         message: 'Registration successful. Your account is pending approval.',
         data: {
@@ -123,23 +159,28 @@ exports.register = async (req, res) => {
           id: true,
           name: true,
           email: true,
+          phone: true,
           role: true,
           isConfirmed: true
         }
       });
 
-      // Don't generate token for unconfirmed users
-      res.status(201).json({
+      // Create token for client accounts
+      const token = signToken(user.id, user.role);
+
+      // Return response in the expected format with token
+      return res.status(201).json({
         status: 'success',
-        message: 'Registration successful. Your account is pending approval.',
+        message: 'Registration successful. You can now login.',
         data: {
+          token,
           user
         }
       });
     }
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(400).json({
+    return res.status(400).json({
       status: 'fail',
       message: error.message
     });
@@ -149,11 +190,15 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     // Handle both old format (email) and new format (emailOrPhone)
-    // By using destructuring with default values, we're more forgiving
     const { email = '', phone = '', emailOrPhone = '', password } = req.body;
     
     // Use the first available identifier
-    const identifier = emailOrPhone || email || phone;
+    let identifier = emailOrPhone || email || phone;
+    
+    // If the identifier looks like a phone number, standardize it
+    if (identifier.match(/^[+0-9]+$/)) {
+      identifier = standardizePhoneNumber(identifier);
+    }
 
     // Check if password exists
     if (!password) {
