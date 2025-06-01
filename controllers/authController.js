@@ -86,6 +86,7 @@ exports.register = async (req, res) => {
     // Create user with role-specific settings
     const userData = {
       name: name || standardizedPhone, // Use phone as fallback name
+      email: `${standardizedPhone.replace('+', '')}@temp.khatak.com`, // Generate placeholder email from phone
       phone: standardizedPhone,
       password: hashedPassword,
       role,
@@ -215,6 +216,7 @@ exports.login = async (req, res) => {
       select: {
         id: true,
         name: true,
+        email: true,
         phone: true,
         password: true,
         role: true,
@@ -275,6 +277,7 @@ exports.getUserProfile = async (req, res) => {
       select: {
         id: true,
         name: true,
+        email: true,
         phone: true,
         role: true,
         isConfirmed: true
